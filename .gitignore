@@ -2,4 +2,6 @@
 *.pidb
 bin/
 obj/
-
+_ReSharper*
+*.user
+*.suo

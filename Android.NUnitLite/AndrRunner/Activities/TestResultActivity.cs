@@ -22,6 +22,8 @@ using Android.OS;
 using Android.Widget;
 
 using MonoDroid.Dialog;
+using NUnit.Framework.Api;
+using NUnit.Framework.Internal;
 using NUnitLite;
 
 namespace Android.NUnitLite.UI {
@@ -35,7 +37,7 @@ namespace Android.NUnitLite.UI {
 
 			string test_case = Intent.GetStringExtra ("TestCase");
 			
-			TestResult result = AndroidRunner.Results [test_case];
+			ITestResult result = AndroidRunner.Results [test_case];
 
 			string error = String.Format ("<b>{0}<b><br><font color='grey'>{1}</font>", 
 				result.Message, result.StackTrace.Replace (System.Environment.NewLine, "<br>"));

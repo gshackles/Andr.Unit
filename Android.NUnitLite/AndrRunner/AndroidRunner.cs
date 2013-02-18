@@ -22,12 +22,17 @@ using System.Net.Sockets;
 using Android.App;
 using Android.Content;
 using Android.Widget;
-
+using NUnit.Framework.Api;
+using NUnit.Framework.Internal;
 using NUnitLite;
+using NUnit.Framework.Api;
+using NUnit.Framework.Internal;
+using NUnit.Framework.Internal.Commands;
+using NUnit.Framework.Internal.WorkItems;
 
 namespace Android.NUnitLite {
 	
-	public class AndroidRunner : TestListener {
+	public class AndroidRunner : ITestListener {
 		
 		Options options;
 		
@@ -123,41 +128,69 @@ namespace Android.NUnitLite {
 			}
 		}
 
-		Stack<DateTime> time = new Stack<DateTime> ();
+	    public void TestFinished(ITestResult result)
+	    {
+            AndroidRunner.Results[result.Test.FullName ?? result.Test.Name] = result;
+
+            if (result.Test is TestSuite)
+            {
+                if (!result.IsFailure() && !result.IsSuccess() && !result.IsInconclusive() && !result.IsIgnored())
+                    Writer.WriteLine("\t[INFO] {0}", result.Message);
+
+                string name = result.Test.Name;
+                if (!String.IsNullOrEmpty(name))
+                    Writer.WriteLine("{0} : {1} ms", name, result.Time * 1000);
+            }
+            else
+            {
+                if (result.IsSuccess())
+                {
+                    Writer.Write("\t[PASS] ");
+                }
+                else if (result.IsIgnored())
+                {
+                    Writer.Write("\t[IGNORED] ");
+                }
+                else if (result.IsFailure())
+                {
+                    Writer.Write("\t[FAIL] ");
+                }
+                else if (result.IsInconclusive())
+                {
+                    Writer.Write("\t[INCONCLUSIVE] ");
+                }
+                else
+                {
+                    Writer.Write("\t[INFO] ");
+                }
+                Writer.Write(result.Test.Name);
+
+                string message = result.Message;
+                if (!String.IsNullOrEmpty(message))
+                {
+                    Writer.Write(" : {0}", message.Replace("\r\n", "\\r\\n"));
+                }
+                Writer.WriteLine();
+
+                string stacktrace = result.StackTrace;
+                if (!String.IsNullOrEmpty(result.StackTrace))
+                {
+                    string[] lines = stacktrace.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (string line in lines)
+                        Writer.WriteLine("\t\t{0}", line);
+                }
+            }
+	    }
+
+	    public void TestOutput(TestOutput testOutput)
+	    {
+	    }
+
+	    Stack<DateTime> time = new Stack<DateTime> ();
 			
 		public void TestFinished (TestResult result)
 		{
-			AndroidRunner.Results [result.Test.FullName ?? result.Test.Name] = result;
 			
-			if (result.Test is TestSuite) {
-				if (!result.IsError && !result.IsFailure && !result.IsSuccess && !result.Executed)
-					Writer.WriteLine ("\t[INFO] {0}", result.Message);
-				
-				var diff = DateTime.UtcNow - time.Pop ();
-				Writer.WriteLine ("{0} : {1} ms", result.Test.Name, diff.TotalMilliseconds);
-			} else {
-				if (result.IsSuccess) {
-					Writer.Write ("\t{0} ", result.Executed ? "[PASS]" : "[IGNORED]");
-				} else if (result.IsFailure || result.IsError) {
-					Writer.Write ("\t[FAIL] ");
-				} else {
-					Writer.Write ("\t[INFO] ");
-				}
-				Writer.Write (result.Test.Name);
-				
-				string message = result.Message;
-				if (!String.IsNullOrEmpty (message)) {
-					Writer.Write (" : {0}", message.Replace ("\r\n", "\\r\\n"));
-				}
-				Writer.WriteLine ();
-						
-				string stacktrace = result.StackTrace;
-				if (!String.IsNullOrEmpty (result.StackTrace)) {
-					string[] lines = stacktrace.Split (new char [] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-					foreach (string line in lines)
-						Writer.WriteLine ("\t\t{0}", line);
-				}
-			}
 		}
 		
 		static AndroidRunner runner = new AndroidRunner ();
@@ -168,7 +201,7 @@ namespace Android.NUnitLite {
 		
 		static List<TestSuite> top = new List<TestSuite> ();
 		static Dictionary<string,TestSuite> suites = new Dictionary<string, TestSuite> ();
-		static Dictionary<string,TestResult> results = new Dictionary<string, TestResult> ();
+		static Dictionary<string,ITestResult> results = new Dictionary<string, ITestResult> ();
 		
 		static public IList<TestSuite> AssemblyLevel {
 			get { return top; }
@@ -178,8 +211,19 @@ namespace Android.NUnitLite {
 			get { return suites; }
 		}
 		
-		static public IDictionary<string,TestResult> Results {
+		static public IDictionary<string,ITestResult> Results {
 			get { return results; }
 		}
+
+        public TestResult Run(NUnit.Framework.Internal.Test test)
+        {
+            TestExecutionContext current = TestExecutionContext.CurrentContext;
+            current.WorkDirectory = Environment.CurrentDirectory;
+            current.Listener = this;
+            current.TestObject = test is TestSuite ? null : Reflect.Construct((test as TestMethod).Method.ReflectedType, null);
+            WorkItem wi = WorkItem.CreateWorkItem(test, current, TestFilter.Empty);
+            wi.Execute();
+            return wi.Result;
+        }
 	}
 }

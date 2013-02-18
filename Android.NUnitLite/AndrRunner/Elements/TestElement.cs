@@ -15,7 +15,8 @@
 //
 
 using System;
-
+using NUnit.Framework.Api;
+using NUnit.Framework.Internal;
 using NUnitLite;
 
 namespace Android.NUnitLite.UI {
@@ -23,7 +24,7 @@ namespace Android.NUnitLite.UI {
 	abstract class TestElement : FormattedElement {
 		
 		string name;
-		TestResult result;
+		ITestResult result;
 		
 		public TestElement (ITest test) : base (String.Empty)
 		{
@@ -39,7 +40,7 @@ namespace Android.NUnitLite.UI {
 			get { return name; }
 		}
 				
-		protected TestResult Result {
+		protected ITestResult Result {
 			get {
 				AndroidRunner.Results.TryGetValue (name, out result);
 				return result;

@@ -17,12 +17,12 @@
 using System;
 
 using Android.App;
-using Android.Content;
 using Android.OS;
 using Android.Widget;
 
 using MonoDroid.Dialog;
-using NUnitLite;
+using NUnit.Framework.Api;
+using NUnit.Framework.Internal;
 
 namespace Android.NUnitLite.UI {
 
@@ -48,7 +48,7 @@ namespace Android.NUnitLite.UI {
 				if (ts != null)
 					main.Add (new TestSuiteElement (ts));
 				else
-					main.Add (new TestCaseElement (test as TestCase));
+					main.Add (new TestCaseElement (test));
 			}
 			menu.Add (main);
 
@@ -71,8 +71,9 @@ namespace Android.NUnitLite.UI {
 				return;
 			
 			try {
-				foreach (ITest test in suite.Tests) {
-					test.Run (runner);
+				foreach (NUnit.Framework.Internal.Test test in suite.Tests)
+				{
+				    runner.Run(test);
 				}
 			}
 			finally {

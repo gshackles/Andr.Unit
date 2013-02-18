@@ -20,14 +20,11 @@ using System.Reflection;
 using System.Threading;
 
 using Android.App;
-using Android.Content;
 using Android.OS;
-using Android.Views;
 using Android.Widget;
 using MonoDroid.Dialog;
-
-using NUnitLite;
-using NUnitLite.Runner;
+using NUnit.Framework.Api;
+using NUnit.Framework.Internal;
 
 namespace Android.NUnitLite.UI {
 
@@ -51,7 +48,7 @@ namespace Android.NUnitLite.UI {
         protected override void OnCreate (Bundle bundle)
         {
             base.OnCreate (bundle);
-			
+
 			if (Runner.Options == null)
 				Runner.Options = new Options (this);
 			
@@ -90,17 +87,23 @@ namespace Android.NUnitLite.UI {
 				});
 			}
 		}
-		
+
+        NUnitLiteTestAssemblyBuilder builder = new NUnitLiteTestAssemblyBuilder();
+
 		public void Add (Assembly assembly)
 		{
 			if (assembly == null)
 				throw new ArgumentNullException ("assembly");
-			
+
 			// this can be called many times but we only want to load them
 			// once since we need to share them across most activities
-			if (!Initialized) {
+			if (!Initialized)
+			{
+                var ts = builder.Build(assembly, new Dictionary<string, object>());
+
+                if (ts == null) return;
+
 				// TestLoader.Load always return a TestSuite so we can avoid casting many times
-				TestSuite ts = TestLoader.Load (assembly) as TestSuite;
 				AndroidRunner.AssemblyLevel.Add (ts);
 				Add (ts);
 			}
@@ -122,8 +125,9 @@ namespace Android.NUnitLite.UI {
 				return;
 			
 			try {
-				foreach (TestSuite suite in AndroidRunner.AssemblyLevel) {
-					suite.Run (Runner);
+				foreach (TestSuite suite in AndroidRunner.AssemblyLevel)
+				{
+				    Runner.Run(suite);
 				}
 			}
 			finally {

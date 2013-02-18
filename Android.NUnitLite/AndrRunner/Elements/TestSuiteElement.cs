@@ -15,12 +15,9 @@
 //
 
 using System;
-
-using Android.App;
 using Android.Content;
 using Android.Views;
-
-using NUnitLite;
+using NUnit.Framework.Internal;
 
 namespace Android.NUnitLite.UI {
 	
@@ -41,30 +38,18 @@ namespace Android.NUnitLite.UI {
 			int count = Suite.TestCaseCount;
 			string caption = String.Format ("<b>{0}</b><br>", Suite.Name);
 			if (count == 0) {
-				caption += "<font color='#ff7f00'>no test was found inside this suite</font>";
+                caption += "<font color='#ff7f00'>no test was found inside this suite</font>";
 			} else if (Result == null) {
 				caption += String.Format ("<font color='green'><b>{0}</b> test case{1}, <i>{2}</i></font>", 
 					count, count == 1 ? String.Empty : "s", Suite.RunState);
 			} else {
-				int error = 0;
-				int failure = 0;
-				int success = 0;
-				foreach (TestResult tr in Result.Results) {
-					if (tr.IsError)
-						error++;
-					else if (tr.IsFailure)
-						failure++;
-					else if (tr.IsSuccess)
-						success++;
-				}
-				
-				if (Result.IsSuccess) {
+				if (Result.FailCount == 0) {
 					caption += String.Format ("<font color='green'><b>Success!</b> {0} test{1}</font>",
-						success, success == 1 ? String.Empty : "s");
-				} else if (Result.Executed) {
-					caption += String.Format ("<font color='green'>{0} success,</font> <font color='red'>{1} failure{2}, {3} error{4}</font>", 
-						success, failure, failure > 1 ? "s" : String.Empty,
-						error, error > 1 ? "s" : String.Empty);
+						Result.PassCount, Result.PassCount == 1 ? String.Empty : "s");
+				} else {
+					caption += String.Format ("<font color='green'>{0} success,</font> <font color='red'>{1} failure{2}, {3} skipped{4}</font>", 
+						Result.PassCount, Result.FailCount, Result.FailCount > 1 ? "s" : String.Empty,
+						Result.SkipCount, Result.SkipCount > 1 ? "s" : String.Empty);
 				}
 			}
 			return caption;
